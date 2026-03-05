@@ -703,7 +703,7 @@ function standardizeElements(element: Element, doc: Document): void {
 		try {
 			elements = element.querySelectorAll(rule.selector);
 		} catch (e) {
-			// Some selectors use :has() which isn't supported by jsdom/nwsapi.
+			// Some selectors use :has() which isn't supported by all DOM engines.
 			// Skip the rule gracefully in those environments.
 			return;
 		}
@@ -1036,4 +1036,3 @@ function flattenWrapperElements(element: Element, doc: Document): void {
 		processingTime: `${(endTime - startTime).toFixed(2)}ms`
 	});
 }
-

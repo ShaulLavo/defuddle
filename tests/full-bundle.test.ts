@@ -1,10 +1,12 @@
 import { describe, test, expect } from 'vitest';
-import { JSDOM } from 'jsdom';
+import { Window } from 'happy-dom';
 import Defuddle from '../src/index.full';
 
 function createDocument(html: string): Document {
-	const dom = new JSDOM(html);
-	return dom.window.document;
+	const window = new Window();
+	window.document.write(html);
+	window.document.close();
+	return window.document;
 }
 
 const simpleHTML = `

@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
+import { Window } from 'happy-dom';
 import { Defuddle } from './node';
-import { writeFile } from 'fs/promises';
+import { readFile, writeFile } from 'fs/promises';
 import { resolve } from 'path';
+import { seed, run } from './benchmark';
 
 interface ParseOptions {
 	output?: string;
@@ -20,6 +22,25 @@ const ansi = {
 	red: (s: string) => useColor ? `\x1b[31m${s}\x1b[39m` : s,
 	green: (s: string) => useColor ? `\x1b[32m${s}\x1b[39m` : s,
 };
+
+function isHttpUrl(source: string): boolean {
+	return source.startsWith('http://') || source.startsWith('https://');
+}
+
+async function fetchHtml(url: string): Promise<string> {
+	const response = await fetch(url);
+	if (!response.ok) {
+		throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
+	}
+	return response.text();
+}
+
+function createWindow(html: string, url?: string): Window {
+	const window = new Window({ url });
+	window.document.write(html);
+	window.document.close();
+	return window;
+}
 
 // Read version from package.json
 const version = require('../package.json').version;
@@ -48,25 +69,17 @@ program
 				options.markdown = true;
 			}
 
-			let JSDOM: any;
-			try {
-				JSDOM = (await import('jsdom')).JSDOM;
-			} catch {
-				console.error(ansi.red('Error: jsdom is required for the CLI. Install it with: npm install jsdom'));
-				process.exit(1);
-			}
-
-			let dom;
-
-			// Determine if source is a URL or file path
-			if (source.startsWith('http://') || source.startsWith('https://')) {
-				dom = await JSDOM.fromURL(source);
+			const sourceUrl = isHttpUrl(source) ? source : undefined;
+			let html: string;
+			if (sourceUrl) {
+				html = await fetchHtml(sourceUrl);
 			} else {
 				const filePath = resolve(process.cwd(), source);
-				dom = await JSDOM.fromFile(filePath);
+				html = await readFile(filePath, 'utf-8');
 			}
 
-			const result = await Defuddle(dom, source.startsWith('http') ? source : undefined, {
+			const window = createWindow(html, sourceUrl);
+			const result = await Defuddle(window, sourceUrl, {
 				debug: options.debug,
 				markdown: options.markdown
 			});
@@ -110,6 +123,42 @@ program
 			} else {
 				console.log(output);
 			}
+		} catch (error) {
+			console.error(ansi.red('Error:'), error instanceof Error ? error.message : 'Unknown error occurred');
+			process.exit(1);
+		}
+	});
+
+// Benchmark commands
+const benchmark = program
+	.command('benchmark')
+	.description('Benchmark Defuddle against a frozen corpus of HTML snapshots');
+
+benchmark
+	.command('seed')
+	.description('Fetch and store HTML snapshots for benchmark targets')
+	.option('--force', 'Re-fetch all snapshots even if they already exist')
+	.action(async (options: { force?: boolean }) => {
+		try {
+			console.log(options.force ? 'Seeding corpus (force refresh)...' : 'Seeding corpus...');
+			await seed({ force: options.force });
+		} catch (error) {
+			console.error(ansi.red('Error:'), error instanceof Error ? error.message : 'Unknown error occurred');
+			process.exit(1);
+		}
+	});
+
+benchmark
+	.command('run')
+	.description('Run benchmark against the frozen corpus')
+	.option('--runs <n>', 'Number of iterations per URL', '1')
+	.option('--label <text>', 'Optional label for this run')
+	.action(async (options: { runs: string; label?: string }) => {
+		try {
+			await run({
+				runs: parseInt(options.runs, 10),
+				label: options.label ?? null,
+			});
 		} catch (error) {
 			console.error(ansi.red('Error:'), error instanceof Error ? error.message : 'Unknown error occurred');
 			process.exit(1);

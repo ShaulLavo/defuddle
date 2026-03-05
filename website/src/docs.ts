@@ -288,9 +288,9 @@ export function getDocsPage(): string {
 
 		<pre><code class="language-bash">npm install defuddle</code></pre>
 
-		<p>For Node.js use, you also need JSDOM:</p>
+		<p>For Node.js use, you also need happy-dom:</p>
 
-		<pre><code class="language-bash">npm install defuddle jsdom</code></pre>
+		<pre><code class="language-bash">npm install defuddle happy-dom</code></pre>
 
 		<h2 id="browser">Browser use</h2>
 
@@ -319,20 +319,23 @@ const result = new Defuddle(doc).parse();</code></pre>
 
 		<h2 id="node">Node.js use</h2>
 
-		<p>The Node.js API accepts an HTML string or a JSDOM instance and returns a promise.</p>
+		<p>The Node.js API accepts an HTML string or a happy-dom window/document and returns a promise.</p>
 
 <pre><code class="language-javascript">import { Defuddle } from 'defuddle/node';
 
 // From an HTML string
-const result = await Defuddle(htmlString);
+const resultFromString = await Defuddle(htmlString);
 
-// From a JSDOM instance
-import { JSDOM } from 'jsdom';
-const dom = await JSDOM.fromURL('https://example.com/article');
-const result = await Defuddle(dom);
+// From a happy-dom window
+import { Window } from 'happy-dom';
+const html = await fetch('https://example.com/article').then(r => r.text());
+const dom = new Window({ url: 'https://example.com/article' });
+dom.document.write(html);
+dom.document.close();
+const resultFromDom = await Defuddle(dom);
 
 // With URL and options
-const result = await Defuddle(dom, 'https://example.com/article', {
+const resultWithOptions = await Defuddle(dom, 'https://example.com/article', {
   markdown: true,
   debug: true
 });</code></pre>
@@ -446,7 +449,7 @@ defuddle parse page.html --output result.html</code></pre>
 			<tbody>
 				<tr><td>Core</td><td><code>defuddle</code></td><td>Browser usage. No dependencies. Handles math content but without MathML/LaTeX conversion fallbacks.</td></tr>
 				<tr><td>Full</td><td><code>defuddle/full</code></td><td>Includes math equation parsing (MathML ↔ LaTeX) and Markdown conversion via Turndown.</td></tr>
-				<tr><td>Node.js</td><td><code>defuddle/node</code></td><td>For Node.js with JSDOM. Includes full capabilities for math and Markdown conversion.</td></tr>
+				<tr><td>Node.js</td><td><code>defuddle/node</code></td><td>For Node.js with happy-dom. Includes full capabilities for math and Markdown conversion.</td></tr>
 			</tbody>
 		</table>
 

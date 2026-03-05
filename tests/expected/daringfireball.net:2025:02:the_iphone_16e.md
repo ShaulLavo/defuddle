@@ -13,9 +13,10 @@ Let’s start with the camera. With just a single lens on the back, the iPhone 1
 
 Apple’s tech specs for iPhone thickness don’t include the camera lenses or camera mesas. Apple just measures and reports the thickness of the flat non-camera part of the phone. But those camera modules and lenses protrude quite a bit. Using a digital caliper, I measured the thickness of the three “levels” of the 16e, regular 16, and 16 Pro:
 
-|  | Base | Mesa | Lens(es) |
-| --- | --- | --- | --- |
+.table-1C94D92B-727A-4CC3-8A3B-18EA7E38C1D7 th:nth-child(1) { text-align: left }.table-1C94D92B-727A-4CC3-8A3B-18EA7E38C1D7 td:nth-child(1) { text-align: left }.table-1C94D92B-727A-4CC3-8A3B-18EA7E38C1D7 th:nth-child(2) { text-align: center }.table-1C94D92B-727A-4CC3-8A3B-18EA7E38C1D7 td:nth-child(2) { text-align: center }.table-1C94D92B-727A-4CC3-8A3B-18EA7E38C1D7 th:nth-child(3) { text-align: center }.table-1C94D92B-727A-4CC3-8A3B-18EA7E38C1D7 td:nth-child(3) { text-align: center }.table-1C94D92B-727A-4CC3-8A3B-18EA7E38C1D7 th:nth-child(4) { text-align: center }.table-1C94D92B-727A-4CC3-8A3B-18EA7E38C1D7 td:nth-child(4) { text-align: center } BaseMesaLens(es)
+
 | iPhone 16e | 7.8mm | — | 9.5mm |
+| --- | --- | --- | --- |
 | iPhone 16 | 7.8mm | 9.6mm | 11.3mm |
 | iPhone 16 Pro | 8.3mm | 10.3mm | 12.5mm |
 
@@ -51,9 +52,10 @@ The iPhone 16e targets the “I only care about the basics” iPhone buyer: the 
 
 The only aspect of the 16e garnering more discussion than its omission of MagSafe is its starting price of $600 for a 128 GB base model. “It should cost $100 less” say some people, who tend to be the same people who *also* strongly believe it should include MagSafe and a ProMotion display. Here’s Apple’s current iPhone lineup, plus the discontinued (but [still](https://www.att.com/buy/phones/apple-iphone-se-3rd-gen-2022.html?q=iphone%20se) [available](https://www.bestbuy.com/site/apple-iphone-se-3rd-generation-64gb-unlocked-black/6507470.p?skuId=6507470) from [some](https://www.cricketwireless.com/prepaid-phones/smartphones/apple-iphone-se-2022-64gb-midnight) carriers) 3rd-generation SE:
 
-| iPhone | Chip | 64 GB | 128 GB | 256 GB | 512 GB | 1 TB |
-| --- | --- | --- | --- | --- | --- | --- |
+.table-7940E2A4-0011-4258-A4DA-D506F80A4F67 th:nth-child(1) { text-align: left }.table-7940E2A4-0011-4258-A4DA-D506F80A4F67 td:nth-child(1) { text-align: left }.table-7940E2A4-0011-4258-A4DA-D506F80A4F67 th:nth-child(2) { text-align: center }.table-7940E2A4-0011-4258-A4DA-D506F80A4F67 td:nth-child(2) { text-align: center }.table-7940E2A4-0011-4258-A4DA-D506F80A4F67 th:nth-child(3) { text-align: center }.table-7940E2A4-0011-4258-A4DA-D506F80A4F67 td:nth-child(3) { text-align: center }.table-7940E2A4-0011-4258-A4DA-D506F80A4F67 th:nth-child(4) { text-align: center }.table-7940E2A4-0011-4258-A4DA-D506F80A4F67 td:nth-child(4) { text-align: center }.table-7940E2A4-0011-4258-A4DA-D506F80A4F67 th:nth-child(5) { text-align: center }.table-7940E2A4-0011-4258-A4DA-D506F80A4F67 td:nth-child(5) { text-align: center }.table-7940E2A4-0011-4258-A4DA-D506F80A4F67 th:nth-child(6) { text-align: center }.table-7940E2A4-0011-4258-A4DA-D506F80A4F67 td:nth-child(6) { text-align: center }.table-7940E2A4-0011-4258-A4DA-D506F80A4F67 th:nth-child(7) { text-align: center }.table-7940E2A4-0011-4258-A4DA-D506F80A4F67 td:nth-child(7) { text-align: center } iPhoneChip64 GB128 GB256 GB512 GB1 TB
+
 | *SE (3rd gen)* | *A15* | *$430* | *$480* | *$580* | — | — |
+| --- | --- | --- | --- | --- | --- | --- |
 | 16e | A18 | — | $600 | $700 | $900 | — |
 | 15 | A16 | — | $700 | $800 | $1000 | — |
 | 16 | A18 | — | $800 | $900 | $1100 | — |

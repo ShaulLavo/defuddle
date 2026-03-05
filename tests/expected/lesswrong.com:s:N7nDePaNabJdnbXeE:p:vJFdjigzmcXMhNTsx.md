@@ -11,8 +11,6 @@
 
 *This work was carried out while at* [*Conjecture*](https://www.conjecture.dev/)*.*
 
-![](https://res.cloudinary.com/lesswrong-2-0/image/upload/v1674094431/mirroredImages/vJFdjigzmcXMhNTsx/mal6l24rfuoinreeemia.png)
-
 *"Moebius illustration of a simulacrum living in an AI-generated story discovering it is in a simulation" by DALL-E 2*
 
 ## Summary
@@ -538,19 +536,6 @@ In my mind, “simulator”, like most natural language categories, has fuzzy bo
 - **Simulator / simulacra nonidentity:** There is not a 1:1 correspondence between the simulator and the things that it simulates
 - **Stochastic:** The model outputs probabilities, and so simulates stochastic dynamics when used to evolve rollouts
 - **Evidential:** The input is interpreted by the simulator as partial evidence that informs an uncertain prediction, rather than propagated according to mechanistic rules
-
-|  | **Self-supervised** | **Converges to simulation objective** | **Generates rollouts** | **Simulator / simulacra nonidentity** | **Stochastic** | **Evidential** |
-| --- | --- | --- | --- | --- | --- | --- |
-| **GPT** | X | X | X | X | X | X |
-| **Bert** | X | X |  | X | X | X |
-| **“Behavior cloning”** | X | X | X |  | X | X |
-| **GANs** | X [^30] | ? |  | X | X | X |
-| **Diffusion** | X [^30] | ? |  | X | X | X |
-| **Model-based RL transition function** | X | X | X | X | X | X |
-| **Game of life** |  | N/A | X | X |  |  |
-| **Physics** |  | N/A | X | X | X |  |
-| **Human imagination** | X [^31] |  | X | X | X | X |
-| **SimCity** |  | N/A | X | X | X |  |
 
 [^1]: [Prediction and Entropy of Printed English](https://www.princeton.edu/~wbialek/rome/refs/shannon_51.pdf)
 

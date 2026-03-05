@@ -2,7 +2,7 @@ import TurndownService from 'turndown';
 import { isElement, isTextNode } from './utils';
 import type { DefuddleResponse, DefuddleOptions } from './types';
 
-// Define a type that works for both JSDOM and browser environments
+// Define a type that works for browser-like DOM environments
 type GenericElement = {
 	classList?: {
 		contains: (className: string) => boolean;
@@ -72,7 +72,7 @@ export function createMarkdownContent(content: string, url: string) {
 			}
 
 			// Process simple tables as before
-			// Use node.rows/row.cells when available (browser/JSDOM), fall back to
+			// Use node.rows/row.cells when available, fall back to
 			// querySelectorAll for environments like linkedom that lack these properties
 			const tableEl = node as any;
 			const rowElements: any[] = tableEl.rows && tableEl.rows.length > 0
