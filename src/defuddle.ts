@@ -457,7 +457,7 @@ export class Defuddle {
 
 		try {
 			// Get all styles, including inline styles
-			const sheets = Array.from(doc.styleSheets).filter(sheet => {
+			const sheets = Array.from(doc.styleSheets ?? []).filter(sheet => {
 				try {
 					// Access rules once to check validity
 					sheet.cssRules;
@@ -566,17 +566,17 @@ export class Defuddle {
 			// Read phase - gather all computedStyles
 			const styles = batch.map(element => {
 				try {
-					return element.ownerDocument.defaultView?.getComputedStyle(element);
+					return this.getComputedStyle(element);
 				} catch (e) {
 					// If we can't get computed style, check inline styles
 					const style = element.getAttribute('style');
 					if (!style) return null;
-					
+
 					// Create a temporary style element to parse inline styles
 					const tempStyle = doc.createElement('style');
 					tempStyle.textContent = `* { ${style} }`;
 					doc.head.appendChild(tempStyle);
-					const computedStyle = element.ownerDocument.defaultView?.getComputedStyle(element);
+					const computedStyle = this.getComputedStyle(element);
 					doc.head.removeChild(tempStyle);
 					return computedStyle;
 				}
@@ -735,7 +735,7 @@ export class Defuddle {
 				// Read phase - compute all styles at once
 				const styles = batch.map(({ element }) => {
 					try {
-						return element.ownerDocument.defaultView?.getComputedStyle(element);
+						return this.getComputedStyle(element);
 					} catch (e) {
 						return null;
 					}

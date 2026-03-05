@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { Window } from 'happy-dom';
 import { Defuddle } from './node';
 import { readFile, writeFile } from 'fs/promises';
 import { resolve } from 'path';
@@ -33,13 +32,6 @@ async function fetchHtml(url: string): Promise<string> {
 		throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
 	}
 	return response.text();
-}
-
-function createWindow(html: string, url?: string): Window {
-	const window = new Window({ url });
-	window.document.write(html);
-	window.document.close();
-	return window;
 }
 
 // Read version from package.json
@@ -78,8 +70,7 @@ program
 				html = await readFile(filePath, 'utf-8');
 			}
 
-			const window = createWindow(html, sourceUrl);
-			const result = await Defuddle(window, sourceUrl, {
+			const result = await Defuddle(html, sourceUrl, {
 				debug: options.debug,
 				markdown: options.markdown
 			});

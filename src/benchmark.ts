@@ -1,6 +1,5 @@
 import { createHash } from 'crypto';
 import { readFile, writeFile, mkdir, readdir, stat } from 'fs/promises';
-import { Window } from 'happy-dom';
 import { resolve, join } from 'path';
 import { gzipSync, gunzipSync } from 'zlib';
 
@@ -114,13 +113,6 @@ async function fetchHtml(url: string): Promise<string> {
 		throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
 	}
 	return response.text();
-}
-
-function createWindow(html: string, url: string): Window {
-	const window = new Window({ url });
-	window.document.write(html);
-	window.document.close();
-	return window;
 }
 
 // ---------------------------------------------------------------------------
@@ -253,9 +245,8 @@ export async function run(options: {
 		const timings: number[] = [];
 
 		for (let i = 0; i < runs; i++) {
-			const window = createWindow(html, url);
 			const t0 = performance.now();
-			await Defuddle(window, url);
+			await Defuddle(html, url);
 			const t1 = performance.now();
 			timings.push(t1 - t0);
 		}

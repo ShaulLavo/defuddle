@@ -38,7 +38,6 @@ console.log(result.author);
 ### Node.js
 
 ```javascript
-import { Window } from 'happy-dom';
 import { Defuddle } from 'defuddle/node';
 
 // Parse HTML from a string
@@ -47,14 +46,11 @@ const resultFromString = await Defuddle(html);
 
 // Parse HTML from a URL
 const htmlFromUrl = await fetch('https://example.com/article').then(r => r.text());
-const dom = new Window({ url: 'https://example.com/article' });
-dom.document.write(htmlFromUrl);
-dom.document.close();
-const resultFromDom = await Defuddle(dom);
+const url = 'https://example.com/article';
+const resultFromUrl = await Defuddle(htmlFromUrl, url);
 
 // With options
-const url = 'https://example.com/article'; // Original URL of the page
-const resultWithOptions = await Defuddle(dom, url, {
+const resultWithOptions = await Defuddle(htmlFromUrl, url, {
   debug: true, // Enable debug mode for verbose logging
   markdown: true // Convert content to markdown
 });
@@ -111,11 +107,7 @@ defuddle parse page.html --debug
 npm install defuddle
 ```
 
-For Node.js usage, you'll also need to install happy-dom:
-
-```bash
-npm install happy-dom
-```
+Linkedom is included as a dependency and used automatically for Node.js usage.
 
 ## Response
 
@@ -143,7 +135,7 @@ Defuddle is available in three different bundles:
 
 1. Core bundle (`defuddle`): The main bundle for browser usage. No dependencies.
 2. Full bundle (`defuddle/full`): Includes additional features for math equation parsing and Markdown conversion.
-3. Node.js bundle (`defuddle/node`): Optimized for Node.js environments using happy-dom. Includes full capabilities for math and Markdown conversion.
+3. Node.js bundle (`defuddle/node`): Optimized for Node.js environments using linkedom. Includes full capabilities for math and Markdown conversion.
 
 The core bundle is recommended for most use cases. It still handles math content, but doesn't include fallbacks for converting between MathML and LaTeX formats. The full bundle adds the ability to create reliable `<math>` elements using `mathml-to-latex` and `temml` libraries.
 

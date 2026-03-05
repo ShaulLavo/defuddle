@@ -1,4 +1,4 @@
-import { Window } from 'happy-dom';
+import { createWindowFromHtml } from './dom-node';
 import DefuddleClass from './index';
 import type { DefuddleOptions, DefuddleResponse } from './types';
 import { toMarkdown } from './markdown';
@@ -41,19 +41,12 @@ function isDocument(value: unknown): value is DocumentLike {
 	return maybeDoc.nodeType === 9 && typeof maybeDoc.createElement === 'function';
 }
 
-function createWindow(html: string, url?: string): Window {
-	const window = new Window({ url });
-	window.document.write(html);
-	window.document.close();
-	return window;
-}
-
 function resolveUrlFromDocument(doc: DocumentLike): string {
 	return doc.location?.href || doc.URL || 'about:blank';
 }
 
 /**
- * Parse HTML content using happy-dom
+ * Parse HTML content using linkedom
  * @param htmlOrDom HTML string, Document, or DOM instance with a window.document
  * @param url Optional URL of the page being parsed
  * @param options Optional parsing options
@@ -68,9 +61,9 @@ export async function Defuddle(
 	let pageUrl = url;
 
 	if (typeof htmlOrDom === 'string') {
-		const window = createWindow(htmlOrDom, url);
-		doc = window.document as unknown as Document;
-		pageUrl = pageUrl || window.location?.href;
+		const { document } = createWindowFromHtml(htmlOrDom, url);
+		doc = document;
+		pageUrl = pageUrl || url;
 	} else if (isDomLike(htmlOrDom)) {
 		doc = htmlOrDom.window.document as unknown as Document;
 		pageUrl = pageUrl || htmlOrDom.window.location?.href;
@@ -100,4 +93,4 @@ export async function Defuddle(
 	return result;
 }
 
-export { DefuddleClass, DefuddleOptions, DefuddleResponse }; 
+export { DefuddleClass, DefuddleOptions, DefuddleResponse };
