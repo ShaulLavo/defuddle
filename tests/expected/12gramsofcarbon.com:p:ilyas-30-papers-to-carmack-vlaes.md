@@ -17,9 +17,15 @@ Machine learning practitioners tend to be a bit handwavy about their terminology
 
 I definitely am not as precise with my language as I should be — I often will say that 'representation learning is key to understanding deep neural networks' and will talk about embedding spaces as if all models are learning some sort of principled representation. There is some truth that all models are learning some kind of "representation", where they are turning information into vectors and back again. But there is no guarantee that the *space* of vectors is well formed. If we are learning a car classifier, we want it to be the case that the school buses are close to the trucks and far from the motorcycles. Since we only have a limited amount of data, though, the model may end up learning a classifier that has the buses next to Ferraris, or whatever. Often, the specific choice of model determines the quality and structure of the vector space.
 
+![](https://substackcdn.com/image/fetch/$s_!YemM!,w_424,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fb8e2d8ef-fb8d-43f5-be94-34b38ae74db3_406x245.png)
+
+A well structured representation space. Things that are similar in the real world have ‘representations’ that are close to each other in vector space.
+
 Another word that is often used imprecisely is the concept of a 'latent' variable. A lot of folks use 'latent' to simply refer to 'the intermediate layers of the model'. So latent variables, embeddings, vector representations — in the common terminology, these terms have all sort of bled together. But a latent variable has a specific meaning: it is a variable that represents some kind of compressed representation space. Not all embeddings are necessarily latent variables. And in this paper, we are specifically interested in *probabilistic* latent variables. These are vectors that are produced by some *probabilistic generator*, commonly a Gaussian function, which is used downstream to calculate the output. And often the model is feeding parameters into the probabilistic function — for example, the model may calculate and pass in a mean and standard deviation, and then get out a vector variable sampled from a Gaussian with those parameters.
 
 It's reasonable to ask why you'd want to feed in seemingly random noise. Surely that would just degrade the model performance? One intuition is that the gaussian generator smooths out your vector space. A model without any probabilistic latents will eventually learn to overfit to the data it sees, creating regions of the vector space without any 'density' that are essentially just noise. The probabilistic latent variable prevents that — a given input no longer represents a single point, but rather is mapped to a smooth area. In addition to being a form of regularization (see [MDL review](https://theahura.substack.com/p/ilyas-30-papers-to-carmack-nn-regularization)), the hope is that by inserting one or more random structured variables, the model will have some scaffolding to structure the high dimensional representation space around. That in turn may result in a representation space that is 'well formed' — the buses are near the trucks and the ferraris are near the lambos and the motorcycles are near the mopeds and all of these things smoothly transition between each other.
+
+![](https://substackcdn.com/image/fetch/$s_!Hs9y!,w_424,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fffb5afd7-ffc8-402d-8eaa-4060938fe1d2_1035x449.png)
 
 Because latent variables learn a 'space' of representations, they can be used to sample more data than what is provided from the training set. Models that have this behavior are called *generative* models because they are explicitly modeling a distribution. That is, instead of learning some classification (what is the likelihood that this picture is a cat given an image with a specific arrangement of pixels, ***p(y | x)*** ), they learn how all of the relevant variables interact (how often does this particular arrangement of pixels correspond with the label cat, ***p(x, y)*** ).[^1]
 
@@ -37,6 +43,8 @@ Like all auto encoders, a VAE has an encoder and a decoder. In theory, you could
 
 In practice, previous papers have shown that if you just naively stick an RNN as the decoder of a VAE, the RNN part overpowers everything. Specifically, the RNN is able to represent everything it needs without relying on the structure of the latent variable, so the model learns to just set the weights that ingest the latent to 0 and ignores it entirely.
 
+![](https://substackcdn.com/image/fetch/$s_!68Jc!,w_424,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F8e826463-6f0b-46fb-a5f0-92a8670fcdd7_1353x988.png)
+
 The author's propose a pretty straightforward solution, but I want to go on a tangent first. To really understand what the authors are doing, we need a better understanding of what a VAE actually is, and how this all relates to Maximum LIkelihood Estimation (MLE). If that's not interesting to you, feel free to jump a few paragraphs (cntrl-f "back to the paper").[^2]
 
 Let's say we have a scatter plot with data that is sampled from some distribution, ***X = { (x <sub>1</sub>, y <sub>1</sub>), (x <sub>2</sub>, y <sub>2</sub>)... }***. We want to learn a generative model that tries to predict the original distribution the data was sampled from. Note how this differs from standard classification. We are not trying to figure out ***y*** given ***x*** or anything like that. We are trying to directly model the real original data source, with all of the variance between ***x*** and ***y*** baked in.
@@ -44,6 +52,10 @@ Let's say we have a scatter plot with data that is sampled from some distributio
 We can represent our model with a set of parameters, ***θ***. We want to find ***θ*** that best 'explains' the data that we see. In other words, we want ***p( X | θ )*** to be high. This is called 'maximum likelihood estimation' — we are finding the model that has the "maximum likelihood" of producing the observations we see.[^3]
 
 This is an intractable problem, even in the simple 2d case. The true distribution of data could be something simple like a Gaussian, or something arbitrarily complicated.
+
+![](https://substackcdn.com/image/fetch/$s_!UuHZ!,w_424,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F901fc4b0-7c42-48d4-b535-c7e5e22fecdf_745x580.png)
+
+The data MAY be Gaussian. But it could also be a Christmas tree.
 
 The number of parameters you need in your model is directly dependent on the shape of the true distribution. But you don't know the true distribution of the data! So you have to look at the data and guess what the shape might be. This is called a 'prior'. One simple example of a 'prior' is "I assume my data was sampled from a line". If you assume the data is a line, you have two parameters ***θ = { m, b }***, where ***m*** is the slope of the line and ***b*** is the bias.
 
@@ -73,11 +85,15 @@ The authors notice that any information passed to the RNN will never appear in t
 
 For example, imagine you were trying to learn to predict the ‘next’ pixel in an image given all the previous ones. You want your ***z*** latents to learn global structure, but not texture. One way to force the model to rely on the ***z*** latents is to give the decoder information that we *don’t* want in the ***z*** latents — in the example provided, you could represent texture through a small window around the pixel. During training the model will never utilize the ***z*** latents to store texture information, because it already has an easier way to access that data directly. But it will be forced to use the ***z*** latents for the larger global information, because the decoder itself is limited to only looking at the last few pixels while the ***z*** latent has the whole thing. Here, we handicap the RNN to prevent ‘posterior collapse’ of the ***z*** latent, while simultaneously encouraging the model to pack specific kinds of information into the latent.
 
+![](https://substackcdn.com/image/fetch/$s_!uNwD!,w_424,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F152e8cff-5b54-4d42-9cb7-6ce7e20e7e06_1733x873.png)
+
 And of course, you could do the opposite — you could show the model a very low resolution image each step, forcing the encoder to pack in local ‘high resolution granular’ data into the latents.
 
 The authors call this a variational lossy autoencoder, a VLAE — lossy because the autoencoder part isn't learning the complete information, as some of it is being carried by the RNN hidden state.
 
 The authors modify the VLAE a bit more by using an 'invertible autoregressive flow' on top of the Gaussian to produce their final ***z*** latent variable. You can think of an IAF as a series of neural network layers on top of the Gaussian. Unlike a standard fully connected layer, the IAF is 'auto regressive' — each dimension of the output is a function of a sequential subset of the input.
+
+![](https://substackcdn.com/image/fetch/$s_!JOgw!,w_424,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F552ec5b4-503f-4d17-a339-b73e818f16c3_1401x466.png)
 
 Because IAFs are more expressive than a standard gaussian output, the theory is that ***z*** has less of an impact on the KL divergence regularization term, which in turn results in the latent being used more.[^5]
 
@@ -92,6 +108,10 @@ One thread is what I've been calling the "complexity" thread. This thread is all
 VLAE builds on these concepts of complexity by using them to justify and guide a particular model architecture. In particular, we can use our understanding about how regularization modifies model complexity to explain an otherwise confusing and unintuitive result — that RNNs don't use latent encoded data. This is pretty cool!
 
 The VLAE paper is also a representation learning paper. In fact, it's really the most representation-learning-paper we've hit thus far. We've talked a bit about representation learning in the review of the [MPNN paper](https://theahura.substack.com/p/ilyas-30-papers-to-carmack-graph) and the [original attention paper](https://theahura.substack.com/p/ilyas-30-papers-to-carmack-og-attention). In those settings, models are learning implicit representations of concepts but aren't really learning representation *spaces*. The VLAE is explicitly architected to learn a latent space. You can adjust the latents in a smooth continuous way and get representations that 'make sense' along the vectors you choose to move in.
+
+![](https://substackcdn.com/image/fetch/$s_!sMgV!,w_424,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F5cd91396-a3b2-48e2-90d7-fcbe4df4da9d_649x705.png)
+
+The latent space of eevees is very semantically reasonable.
 
 This is partially why the authors are so interested in understanding just how much they are able to compress their representations. Almost all interesting representation schemes are lossy, the question is always 'how much' and 'along what axis'. Most generic compression schemes (think: jpeg) are semantically indiscriminate. You cannot tell a jpeg to 'care more' about the structure of a house vs the color of the sky, for example. If the authors can use VLAEs to consistently regenerate the information they care about using a very small vector representation, they have created a very powerful *semantically aware* compression algorithm. This was always the promise of auto-encoders in general, so it's cool to see how that particular area developed.
 

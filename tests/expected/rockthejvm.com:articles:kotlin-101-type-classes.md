@@ -16,10 +16,22 @@ In this article, we explore the concept of *type classes* in Kotlin, a powerful 
 
 We'll use version 1.9.22 of Kotlin and version 1.2.1 of the Arrow library. We'll also use Kotlin's context receivers, which are still an experimental feature. We need to modify the Gradle configuration:
 
+```kotlin
+tasks.withType<KotlinCompile>().configureEach {
+    kotlinOptions {
+        freeCompilerArgs = freeCompilerArgs + "-Xcontext-receivers"
+    }
+}
+```
+
 ## The Problem
 
 In this article, we'll simulate a system for validating user portfolios in a fintech startup. Data validation is crucial in software development, especially in financial data transactions. Ensuring data conforms to expected formats and rules is vital for maintaining the system's integrity.
 
 So, first, let's define the data we want to validate. The first DTO represents the creation of a new portfolio:
+
+```kotlin
+data class CreatePortfolioDTO(val userId: String, val amount: Double)
+```
 
 The above code could be more optimal and maintainable. We can abstract the validation process in a dedicated function using type classes, which is a common pattern in functional programming.

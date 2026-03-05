@@ -11,6 +11,8 @@
 
 *This work was carried out while at* [*Conjecture*](https://www.conjecture.dev/)*.*
 
+![](https://res.cloudinary.com/lesswrong-2-0/image/upload/v1674094431/mirroredImages/vJFdjigzmcXMhNTsx/mal6l24rfuoinreeemia.png)
+
 *"Moebius illustration of a simulacrum living in an AI-generated story discovering it is in a simulation" by DALL-E 2*
 
 ## Summary
@@ -160,7 +162,7 @@ If there are other ways of constructing AI, might we also avoid some of the scar
 
 GPT doesn’t seem to care which agent it simulates, nor if the scene ends and the agent is effectively destroyed. This is not corrigibility in [Paul Christiano’s formulation](https://ai-alignment.com/corrigibility-3039e668638), where the policy is “okay” with being turned off or having its goal changed in a positive sense, but has many aspects of the [negative formulation found on Arbital](https://lesswrong.com/w/corrigibility). It is corrigible in this way because a major part of the agent specification (the prompt) is not fixed by the policy, and the policy lacks direct training incentives to control its prompt [^9], as it never generates text or otherwise influences its prompts during training. It’s *we* who choose to sample tokens from GPT’s predictions and append them to the prompt at runtime, and the result is not always helpful to any agents who may be programmed by the prompt. The downfall of the ambitious villain from an oversight committed in hubris is a predictable narrative pattern.[^10] So is the end of a scene.
 
-In general, the model’s prediction vector could point in any direction relative to the predicted agent’s interests. I call this the **prediction orthogonality thesis:***A model whose objective is prediction* [^11] *can simulate agents who optimize toward any objectives, with any degree of optimality (bounded above but not below by the model’s power).*
+In general, the model’s prediction vector could point in any direction relative to the predicted agent’s interests. I call this the **prediction orthogonality thesis:** *A model whose objective is prediction* [^11] *can simulate agents who optimize toward any objectives, with any degree of optimality (bounded above but not below by the model’s power).*
 
 This is a corollary of the classical [orthogonality thesis](https://lesswrong.com/w/orthogonality-thesis), which states that agents can have any combination of intelligence level and goal, combined with the assumption that agents can in principle be predicted. A single predictive model may also predict multiple agents, either independently (e.g. in different conditions), or interacting in a multi-agent simulation. A more optimal predictor is not restricted to predicting more optimal agents: being smarter does not make you unable to predict stupid systems, nor things that aren’t agentic like the [weather](https://en.wikipedia.org/wiki/History_of_numerical_weather_prediction).
 
@@ -438,7 +440,7 @@ The verdict that knowledge is purely a property of configurations cannot be naiv
 
 Making the ontological distinction between GPT and instances of text which are propagated by it makes these discoveries unsurprising: obviously, different configurations will be differently capable and in general behave differently when animated by the laws of GPT physics. We can only test one configuration at once, and given the vast number of possible configurations that would attempt any given task, it’s unlikely we’ve found the optimal taker for *any* test.
 
-In the simulation ontology, I say that GPT and its output-instances correspond respectively to the **simulator** and **simulacra**. **GPT** is to a **piece of text output by GPT** as **quantum physics** is to a **person taking a test**, or as [**transition rules of Conway’s Game of Life**](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life#Rules) are to [**glider**](https://conwaylife.com/wiki/Glider). The simulator is a time-invariant law which unconditionally governs the evolution of all simulacra.
+In the simulation ontology, I say that GPT and its output-instances correspond respectively to the **simulator** and **simulacra**. **GPT** is to a **piece of text output by GPT** as **quantum physics** is to a **person taking a test**, or as [**transition rules of Conway’s Game of Life**](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life#Rules) are to [**glider**](https://conwaylife.com/wiki/Glider) . The simulator is a time-invariant law which unconditionally governs the evolution of all simulacra.
 
 ![](https://res.cloudinary.com/lesswrong-2-0/image/upload/v1674094431/mirroredImages/vJFdjigzmcXMhNTsx/cvecikybt43jhfzufhye.png)
 
@@ -536,6 +538,19 @@ In my mind, “simulator”, like most natural language categories, has fuzzy bo
 - **Simulator / simulacra nonidentity:** There is not a 1:1 correspondence between the simulator and the things that it simulates
 - **Stochastic:** The model outputs probabilities, and so simulates stochastic dynamics when used to evolve rollouts
 - **Evidential:** The input is interpreted by the simulator as partial evidence that informs an uncertain prediction, rather than propagated according to mechanistic rules
+
+|  | **Self-supervised** | **Converges to simulation objective** | **Generates rollouts** | **Simulator / simulacra nonidentity** | **Stochastic** | **Evidential** |
+| --- | --- | --- | --- | --- | --- | --- |
+| **GPT** | X | X | X | X | X | X |
+| **Bert** | X | X |  | X | X | X |
+| **“Behavior cloning”** | X | X | X |  | X | X |
+| **GANs** | X [^30] | ? |  | X | X | X |
+| **Diffusion** | X [^30] | ? |  | X | X | X |
+| **Model-based RL transition function** | X | X | X | X | X | X |
+| **Game of life** |  | N/A | X | X |  |  |
+| **Physics** |  | N/A | X | X | X |  |
+| **Human imagination** | X [^31] |  | X | X | X | X |
+| **SimCity** |  | N/A | X | X | X |  |
 
 [^1]: [Prediction and Entropy of Printed English](https://www.princeton.edu/~wbialek/rome/refs/shannon_51.pdf)
 
