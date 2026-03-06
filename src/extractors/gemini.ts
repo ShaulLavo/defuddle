@@ -1,5 +1,6 @@
 import { ConversationExtractor } from './_conversation';
 import { ConversationMessage, ConversationMetadata, Footnote } from '../types/extractors';
+import { parseHTML, serializeHTML } from '../utils/dom';
 
 export class GeminiExtractor extends ConversationExtractor {
 	private conversationContainers: NodeListOf<Element> | null;
@@ -29,7 +30,7 @@ export class GeminiExtractor extends ConversationExtractor {
 			if (userQuery) {
 				const queryText = userQuery.querySelector('.query-text');
 				if (queryText) {
-					const content = queryText.innerHTML || '';
+					const content = serializeHTML(queryText);
 					messages.push({
 						author: 'You',
 						content: content.trim(),
@@ -45,17 +46,17 @@ export class GeminiExtractor extends ConversationExtractor {
 				const contentElement = extendedContent || regularContent;
 
 				if (contentElement) {
-					let content = contentElement.innerHTML || '';
+					let content = serializeHTML(contentElement);
 					
 					const tempDiv = this.document.createElement('div');
-					tempDiv.innerHTML = content;
-					
+					tempDiv.appendChild(parseHTML(this.document, content));
+
 					tempDiv.querySelectorAll('.table-content').forEach(el => {
 						// `table-content` is a PARTIAL selector in defuddle (table of contents, will be removed), but a real table in Gemini (should be kept).
 						el.classList.remove('table-content');
 					});
-					
-					content = tempDiv.innerHTML;
+
+					content = serializeHTML(tempDiv);
 					
 					messages.push({
 						author: 'Gemini',

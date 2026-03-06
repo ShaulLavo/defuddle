@@ -11,8 +11,10 @@ import {
 	FOOTNOTE_LIST_SELECTORS
 } from './constants';
 import { standardizeContent } from './standardize';
+import { standardizeFootnotes } from './elements/footnotes';
 import { ContentScorer, ContentScore } from './scoring';
 import { getComputedStyle } from './utils';
+import { parseHTML, serializeHTML, decodeHTMLEntities } from './utils/dom';
 
 interface StyleChange {
 	selector: string;
@@ -141,7 +143,7 @@ export class Defuddle {
 	/**
 	 * Find a DOM element whose text matches the schema.org text content.
 	 * Used when the content scorer picked the wrong element from a feed page.
-	 * Returns the element's innerHTML including sibling media (images, etc.)
+	 * Returns the element's inner HTML including sibling media (images, etc.)
 	 */
 	private _findContentBySchemaText(schemaText: string): string {
 		const body = this.doc.body;
@@ -208,10 +210,13 @@ export class Defuddle {
 
 		// Now resolve URLs in the text content
 		this.resolveRelativeUrls(bestMatch);
-		let html = bestMatch.innerHTML;
+		let html = serializeHTML(bestMatch);
 
 		if (imageSrc) {
-			html += `<img src="${imageSrc}" alt="${imageAlt}">`;
+			const img = this.doc.createElement('img');
+			img.setAttribute('src', imageSrc);
+			img.setAttribute('alt', imageAlt);
+			html += img.outerHTML;
 		}
 
 		return html;
@@ -372,7 +377,7 @@ export class Defuddle {
 			// Find main content
 			const mainContent = this.findMainContent(clone);
 			if (!mainContent) {
-				const fallbackContent = this.resolveContentUrls(this.doc.body.innerHTML);
+				const fallbackContent = this.resolveContentUrls(serializeHTML(this.doc.body));
 				const endTime = Date.now();
 				return {
 					content: fallbackContent,
@@ -382,6 +387,9 @@ export class Defuddle {
 					metaTags: pageMetaTags
 				};
 			}
+
+			// Standardize footnotes before cleanup (CSS sidenotes use display:none)
+			standardizeFootnotes(mainContent);
 
 			// Remove small images
 			this.removeSmallImages(clone, smallImages);
@@ -416,7 +424,7 @@ export class Defuddle {
 			};
 		} catch (error) {
 			console.error('Defuddle', 'Error processing document:', error);
-			const errorContent = this.resolveContentUrls(this.doc.body.innerHTML);
+			const errorContent = this.resolveContentUrls(serializeHTML(this.doc.body));
 			const endTime = Date.now();
 			return {
 				content: errorContent,
@@ -429,9 +437,9 @@ export class Defuddle {
 	}
 
 	private countWords(content: string): number {
-		// Create a temporary div to parse HTML content
+		// Parse HTML content to extract text
 		const tempDiv = this.doc.createElement('div');
-		tempDiv.innerHTML = content;
+		tempDiv.appendChild(parseHTML(this.doc, content));
 
 		// Get text content, removing extra whitespace
 		const text = tempDiv.textContent || '';
@@ -636,10 +644,10 @@ export class Defuddle {
 					return;
 				}
 
-				// Skip code elements where class names indicate
-				// language/syntax, not page structure
+				// Skip code elements and elements containing code blocks
+				// where class names indicate language/syntax, not page structure
 				const tag = el.tagName;
-				if (tag === 'CODE' || tag === 'PRE') {
+				if (tag === 'CODE' || tag === 'PRE' || el.querySelector('pre')) {
 					return;
 				}
 
@@ -670,8 +678,12 @@ export class Defuddle {
 		// Remove all collected elements in a single pass
 		// Skip elements that are ancestors of mainContent to avoid disconnecting it
 		// Skip footnote list containers, their parents, and immediate children
+		// Skip anchor links inside headings - the heading transform handles these
 		elementsToRemove.forEach(el => {
 			if (mainContent && el.contains(mainContent)) {
+				return;
+			}
+			if (el.tagName === 'A' && el.closest('h1, h2, h3, h4, h5, h6')) {
 				return;
 			}
 			try {
@@ -1050,9 +1062,9 @@ export class Defuddle {
 		if (!baseUrl) return html;
 
 		const container = this.doc.createElement('div');
-		container.innerHTML = html;
+		container.appendChild(parseHTML(this.doc, html));
 		this.resolveRelativeUrls(container);
-		return container.innerHTML;
+		return serializeHTML(container);
 	}
 
 	private _extractSchemaOrgData(doc: Document): any {
@@ -1118,8 +1130,6 @@ export class Defuddle {
 	}
 
 	private _decodeHTMLEntities(text: string): string {
-		const textarea = this.doc.createElement('textarea');
-		textarea.innerHTML = text;
-		return textarea.value;
+		return decodeHTMLEntities(this.doc, text);
 	}
 } 

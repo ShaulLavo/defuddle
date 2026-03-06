@@ -1,5 +1,6 @@
 import TurndownService from 'turndown';
 import { isElement, isTextNode } from './utils';
+import { parseHTML, serializeHTML } from './utils/dom';
 import type { DefuddleResponse, DefuddleOptions } from './types';
 
 // Define a type that works for browser-like DOM environments
@@ -12,14 +13,12 @@ type GenericElement = {
 	querySelector: (selector: string) => Element | null;
 	querySelectorAll: (selector: string) => NodeListOf<Element>;
 	rows?: ArrayLike<{
-		cells?: ArrayLike<{
-			innerHTML?: string;
-		}>;
+		cells?: ArrayLike<{}>;
 	}>;
 	parentNode?: GenericElement | null;
 	nextSibling?: GenericElement | null;
 	nodeName: string;
-	innerHTML?: string;
+	innerHTML: string;
 	children?: ArrayLike<GenericElement>;
 	cloneNode: (deep?: boolean) => Node;
 	textContent?: string | null;
@@ -36,6 +35,16 @@ export function isGenericElement(node: unknown): node is GenericElement {
 
 export function asGenericElement(node: any): GenericElement {
 	return node as unknown as GenericElement;
+}
+
+// Check if an element belongs directly to an ancestor, not to an intervening TABLE
+function isDirectChild(el: any, ancestor: any): boolean {
+	let parent = el.parentNode;
+	while (parent && parent !== ancestor) {
+		if (parent.nodeName === 'TABLE') return false;
+		parent = parent.parentNode;
+	}
+	return parent === ancestor;
 }
 
 export function createMarkdownContent(content: string, url: string) {
@@ -59,9 +68,34 @@ export function createMarkdownContent(content: string, url: string) {
 				return handleNestedEquations(node);
 			}
 
+			// Detect layout tables (used for styling/positioning, not data)
+			const hasNestedTables = node.querySelector('table') !== null;
+			const directCells = Array.from(node.querySelectorAll('td, th')).filter(
+				(el: any) => isDirectChild(el, node)
+			);
+
+			if (hasNestedTables || directCells.length <= 1) {
+				const directRows = Array.from(node.querySelectorAll('tr')).filter(
+					(el: any) => isDirectChild(el, node)
+				);
+				const cellCounts = directRows.map((tr: any) =>
+					directCells.filter((cell: any) => cell.parentNode === tr).length
+				);
+				const isSingleColumn = directRows.length > 0
+					&& new Set(cellCounts).size === 1
+					&& cellCounts[0] <= 1;
+
+				if (isSingleColumn) {
+					// Layout table — extract content, don't convert to markdown table
+					return '\n\n' + turndownService.turndown(
+						directCells.map((cell: any) => serializeHTML(cell)).join('')
+					) + '\n\n';
+				}
+			}
+
 			// Check if the table has colspan or rowspan
 			const cells = Array.from(node.querySelectorAll('td, th'));
-			const hasComplexStructure = cells.some(cell => 
+			const hasComplexStructure = cells.some(cell =>
 				isGenericElement(asGenericElement(cell)) && (cell.hasAttribute('colspan') || cell.hasAttribute('rowspan'))
 			);
 
@@ -77,15 +111,9 @@ export function createMarkdownContent(content: string, url: string) {
 			const tableEl = node as any;
 			const rowElements: any[] = tableEl.rows && tableEl.rows.length > 0
 				? Array.from(tableEl.rows)
-				: Array.from(node.querySelectorAll('tr')).filter((tr: any) => {
-					// Exclude rows from nested tables
-					let parent = tr.parentNode;
-					while (parent && parent !== node) {
-						if (parent.nodeName === 'TABLE') return false;
-						parent = parent.parentNode;
-					}
-					return parent === node;
-				});
+				: Array.from(node.querySelectorAll('tr')).filter(
+					(tr: any) => isDirectChild(tr, node)
+				);
 			const rows = rowElements.map((row: any) => {
 				const cellElements: any[] = row.cells && row.cells.length > 0
 					? Array.from(row.cells)
@@ -94,7 +122,7 @@ export function createMarkdownContent(content: string, url: string) {
 					);
 				const cellContents = cellElements.map((cell: any) => {
 					// Remove newlines and trim the content
-					let cellContent = turndownService.turndown(cell.innerHTML || '')
+					let cellContent = turndownService.turndown(serializeHTML(cell))
 						.replace(/\n/g, ' ')
 						.trim();
 					// Escape pipe characters
@@ -218,14 +246,13 @@ export function createMarkdownContent(content: string, url: string) {
 				const tagText = tagSpan && isGenericElement(tagSpan) ? tagSpan.textContent?.trim() : '';
 				
 				// Process the caption content, including math elements
-				let captionContent = figcaption.innerHTML || '';
+				let captionContent = serializeHTML(figcaption);
 				const ownerDoc = (node as any).ownerDocument;
 				captionContent = captionContent.replace(/<math.*?>(.*?)<\/math>/g, (match, mathContent, offset, string) => {
 					let latex = '';
 					if (ownerDoc) {
-						const tempDiv = ownerDoc.createElement('div');
-						tempDiv.innerHTML = match;
-						const mathElement = tempDiv.querySelector('math');
+						const fragment = parseHTML(ownerDoc, match);
+						const mathElement = fragment.querySelector('math');
 						latex = mathElement && isGenericElement(mathElement) ? extractLatex(mathElement) : '';
 					}
 					const prevChar = string[offset - 1] || '';
@@ -322,7 +349,7 @@ export function createMarkdownContent(content: string, url: string) {
 			
 			// Extract the heading
 			const headingNode = node.querySelector('h1, h2, h3, h4, h5, h6');
-			const headingContent = headingNode ? turndownService.turndown(headingNode.innerHTML || '') : '';
+			const headingContent = headingNode ? turndownService.turndown(serializeHTML(headingNode)) : '';
 			
 			// Remove the heading from the content
 			if (headingNode) {
@@ -330,7 +357,7 @@ export function createMarkdownContent(content: string, url: string) {
 			}
 			
 			// Convert the remaining content
-			const remainingContent = turndownService.turndown(node.innerHTML || '');
+			const remainingContent = turndownService.turndown(serializeHTML(node));
 			
 			// Construct the new markdown
 			let markdown = `${headingContent}\n\n${remainingContent}\n\n`;
@@ -354,7 +381,7 @@ export function createMarkdownContent(content: string, url: string) {
 			
 			const items = Array.from(node.children || []).map((item, index) => {
 				if (isGenericElement(item)) {
-					const itemContent = item.innerHTML?.replace(/^<span class="ltx_tag ltx_tag_item">\d+\.<\/span>\s*/, '') || '';
+					const itemContent = (serializeHTML(item) || '').replace(/^<span class="ltx_tag ltx_tag_item">\d+\.<\/span>\s*/, '');
 					return `${index + 1}. ${turndownService.turndown(itemContent)}`;
 				}
 				return '';
@@ -420,7 +447,7 @@ export function createMarkdownContent(content: string, url: string) {
 						supElement.remove();
 					}
 					
-					const referenceContent = turndownService.turndown(li.innerHTML || '');
+					const referenceContent = turndownService.turndown(serializeHTML(li));
 					// Remove the backlink from the footnote content
 					const cleanedContent = referenceContent.replace(/\s*↩︎$/, '').trim();
 					return `[^${id?.toLowerCase()}]: ${cleanedContent}`;

@@ -7,7 +7,7 @@
 }
 ```
 
-Time taken by KaTeX to render formulæ: 8 ms [PDF version](https://math-katex-centraliser/centraliser.pdf)  
+Time taken by KaTeX to render formulæ: 8 ms [PDF version](https://katex-centraliser/centraliser.pdf)  
   
 
 #### Theorem
@@ -69,7 +69,7 @@ a=l\iff g\text{ has coprime cycle lengths}\\
 b=1 \iff g \text{ has unequal cycle lengths}
 \end{aligned}
 $$
- (5) (6) The result now follows from (1), (2), (4), (5) and (6).
+ (5) (6) The result now follows from (1), (2), (4), (5) and (6). 
 $$
 C_G(g)=\langle g\rangle\iff\lvert \text{Stab}(g)\rvert=\lvert g \rvert\iff\text{the cycles of g are of unequal coprime lengths}
 $$

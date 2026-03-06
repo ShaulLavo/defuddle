@@ -116,8 +116,10 @@ export const EXACT_SELECTORS = [
 	// '[href*="/categories"]', // see issue #131
 	'[href*="/tag/"]',
 	'[href*="/tags/"]',
-	'[href*="/topics"]',
-	'[href*="author"]',
+	// '[href*="/topics"]', // see issue #131
+	'[href*="/author/"]',
+	'[href*="/author?"]',
+	'[href$="/author"]',
 	'[href*="#toc"]',
 	'[href="#top"]',
 	'[href="#Top"]',
@@ -145,6 +147,8 @@ export const EXACT_SELECTORS = [
 	'label',
 	'option',
 	'select',
+	'[role="listbox"]',
+	'[role="option"]',
 	'textarea',
 	// 'time', // see issue #136
 	// 'relative-time', // see issue #136
@@ -743,7 +747,7 @@ export const PARTIAL_SELECTORS = [
 	'toc-container',
 	'toggle-caption',
 //	'toolbar', prism.js
-	'tooltip',
+	'tooltip-content',
 	'topbar',
 	'topic-list',
 	'topic-subnav',

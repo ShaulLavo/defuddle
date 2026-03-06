@@ -1,5 +1,6 @@
 import { BaseExtractor } from './_base';
 import { ExtractorResult } from '../types/extractors';
+import { parseHTML, serializeHTML } from '../utils/dom';
 
 interface OembedResponse {
 	html: string;
@@ -130,14 +131,14 @@ export class XOembedExtractor extends BaseExtractor {
 
 		// Parse the oEmbed HTML to extract tweet text
 		const div = this.document.createElement('div');
-		div.innerHTML = data.html;
+		div.appendChild(parseHTML(this.document, data.html));
 
 		// The oEmbed HTML contains a <blockquote> with <p> tags for text
 		// and an <a> tag for the date
 		const blockquote = div.querySelector('blockquote');
 		const paragraphs = blockquote?.querySelectorAll('p') || [];
 		const tweetText = Array.from(paragraphs)
-			.map(p => `<p>${p.innerHTML}</p>`)
+			.map(p => `<p>${serializeHTML(p)}</p>`)
 			.join('\n');
 
 		const handle = data.author_url

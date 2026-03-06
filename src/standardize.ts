@@ -10,10 +10,10 @@ import {
 import { DefuddleMetadata } from './types';
 import { mathRules } from './elements/math';
 import { codeBlockRules } from './elements/code';
-import { standardizeFootnotes } from './elements/footnotes';
 import { headingRules } from './elements/headings';
 import { imageRules } from './elements/images';
 import { isElement, isTextNode, isCommentNode, getComputedStyle, logDebug } from './utils';
+import { transferContent } from './utils/dom';
 
 // Element standardization rules
 // Maps selectors to their target HTML element name
@@ -43,7 +43,7 @@ const ELEMENT_STANDARDIZATION_RULES: StandardizationRule[] = [
 
 			// Get content from .callout-content div, or fall back to whole aside
 			const contentEl = el.querySelector('.callout-content');
-			blockquote.innerHTML = contentEl ? contentEl.innerHTML : el.innerHTML;
+			transferContent(contentEl || el, blockquote);
 
 			return blockquote;
 		}
@@ -55,10 +55,9 @@ const ELEMENT_STANDARDIZATION_RULES: StandardizationRule[] = [
 		element: 'p',
 		transform: (el: Element, doc: Document): Element => {
 			const p = doc.createElement('p');
-			
-			// Copy innerHTML
-			p.innerHTML = el.innerHTML;
-			
+
+			transferContent(el, p);
+
 			// Copy allowed attributes
 			Array.from(el.attributes).forEach(attr => {
 				if (ALLOWED_ATTRIBUTES.has(attr.name)) {
@@ -94,7 +93,7 @@ const ELEMENT_STANDARDIZATION_RULES: StandardizationRule[] = [
 					const paragraphDivs = content.querySelectorAll('div[role="paragraph"]');
 					paragraphDivs.forEach(div => {
 						const p = doc.createElement('p');
-						p.innerHTML = div.innerHTML;
+						transferContent(div, p);
 						div.replaceWith(p);
 					});
 					
@@ -118,10 +117,10 @@ const ELEMENT_STANDARDIZATION_RULES: StandardizationRule[] = [
 								const nestedParagraphs = nestedContent.querySelectorAll('div[role="paragraph"]');
 								nestedParagraphs.forEach(div => {
 									const p = doc.createElement('p');
-									p.innerHTML = div.innerHTML;
+									transferContent(div, p);
 									div.replaceWith(p);
 								});
-								nestedLi.innerHTML = nestedContent.innerHTML;
+								transferContent(nestedContent, nestedLi);
 							}
 							
 							newNestedList.appendChild(nestedLi);
@@ -130,7 +129,7 @@ const ELEMENT_STANDARDIZATION_RULES: StandardizationRule[] = [
 						nestedList.replaceWith(newNestedList);
 					});
 					
-					li.innerHTML = content.innerHTML;
+					transferContent(content, li);
 				}
 				
 				list.appendChild(li);
@@ -151,7 +150,7 @@ const ELEMENT_STANDARDIZATION_RULES: StandardizationRule[] = [
 			const paragraphDivs = content.querySelectorAll('div[role="paragraph"]');
 			paragraphDivs.forEach(div => {
 				const p = doc.createElement('p');
-				p.innerHTML = div.innerHTML;
+				transferContent(div, p);
 				div.replaceWith(p);
 			});
 			
@@ -169,8 +168,8 @@ export function standardizeContent(element: Element, metadata: DefuddleMetadata,
 	// Handle H1 elements - remove first one and convert others to H2
 	standardizeHeadings(element, metadata.title, doc);
 
-	// Standardize footnotes and citations
-	standardizeFootnotes(element);
+	// Wrap code elements with white-space: pre in <pre> before attribute stripping
+	wrapPreformattedCode(element, doc);
 
 	// Convert embedded content to standard formats
 	standardizeElements(element, doc);
@@ -183,6 +182,9 @@ export function standardizeContent(element: Element, metadata: DefuddleMetadata,
 		// Strip unwanted attributes
 		stripUnwantedAttributes(element, debug);
 
+		// Unwrap bare spans (no attributes remaining after stripping)
+		unwrapBareSpans(element);
+
 		// Unwrap javascript: links — keep text, remove the link
 		const jsLinks = Array.from(element.querySelectorAll('a[href^="javascript:"]'));
 		jsLinks.forEach(link => {
@@ -190,6 +192,17 @@ export function standardizeContent(element: Element, metadata: DefuddleMetadata,
 				link.parentNode?.insertBefore(link.firstChild, link);
 			}
 			link.remove();
+		});
+
+		// Unwrap anchor links that wrap headings (e.g. clickable section headers)
+		const headingAnchors = Array.from(element.querySelectorAll('a[href^="#"]'));
+		headingAnchors.forEach(link => {
+			if (link.querySelector('h1, h2, h3, h4, h5, h6')) {
+				while (link.firstChild) {
+					link.parentNode?.insertBefore(link.firstChild, link);
+				}
+				link.remove();
+			}
 		});
 
 		// Remove obsolete plugin elements
@@ -218,6 +231,27 @@ export function standardizeContent(element: Element, metadata: DefuddleMetadata,
 		removeTrailingHeadings(element);
 		stripExtraBrElements(element);
 		logDebug('Debug mode: Skipping div flattening to preserve structure');
+	}
+}
+
+/**
+ * Wrap <code> elements that have white-space: pre (via inline style)
+ * in a <pre> element, so they get treated as code blocks.
+ */
+function wrapPreformattedCode(element: Element, doc: Document): void {
+	const codeElements = Array.from(element.querySelectorAll('code'));
+	for (const code of codeElements) {
+		// Skip if already inside a <pre>
+		if (code.closest('pre')) continue;
+
+		// Check inline style for white-space: pre
+		const style = code.getAttribute('style') || '';
+		if (!/white-space\s*:\s*pre/.test(style)) continue;
+
+		// Wrap in <pre>
+		const pre = doc.createElement('pre');
+		code.parentNode?.insertBefore(pre, code);
+		pre.appendChild(code);
 	}
 }
 
@@ -345,7 +379,7 @@ function standardizeHeadings(element: Element, title: string, doc: Document): vo
 
 	Array.from(h1s).forEach(h1 => {
 		const h2 = doc.createElement('h2');
-		h2.innerHTML = h1.innerHTML;
+		transferContent(h1, h2);
 		// Copy allowed attributes
 		Array.from(h1.attributes).forEach(attr => {
 			if (ALLOWED_ATTRIBUTES.has(attr.name)) {
@@ -442,6 +476,34 @@ function stripUnwantedAttributes(element: Element, debug: boolean): void {
 	element.querySelectorAll('*').forEach(processElement);
 
 	logDebug('Stripped attributes:', attributeCount);
+}
+
+function unwrapBareSpans(element: Element): void {
+	// Process deepest spans first so nested bare spans collapse in one pass
+	const spans = Array.from(element.querySelectorAll('span')).reverse();
+	let unwrappedCount = 0;
+
+	for (const span of spans) {
+		if (!span.isConnected) continue;
+		if (span.attributes.length > 0) continue;
+
+		const parent = span.parentNode;
+		if (!parent) continue;
+
+		// Replace span with its children
+		while (span.firstChild) {
+			parent.insertBefore(span.firstChild, span);
+		}
+		span.remove();
+		unwrappedCount++;
+	}
+
+	// Merge adjacent text nodes left behind in one pass
+	if (unwrappedCount > 0) {
+		element.normalize();
+	}
+
+	logDebug('Unwrapped bare spans:', unwrappedCount);
 }
 
 function removeEmptyElements(element: Element): void {
@@ -558,6 +620,32 @@ function stripExtraBrElements(element: Element): void {
 	});
 }
 
+function moveWhitespaceOutside(node: Element, doc: Document, direction: 'leading' | 'trailing'): number {
+	const child = direction === 'leading' ? node.firstChild : node.lastChild;
+	if (!child || !isTextNode(child)) return 0;
+
+	const text = child.textContent || '';
+	const trimmed = direction === 'leading' ? text.replace(/^\s+/, '') : text.replace(/\s+$/, '');
+	if (trimmed === text || !node.parentNode) return 0;
+
+	child.textContent = trimmed;
+
+	// Ensure a space exists on the outside
+	const neighbor = direction === 'leading' ? node.previousSibling : node.nextSibling;
+	const neighborHasSpace = neighbor && isTextNode(neighbor) && (
+		direction === 'leading'
+			? (neighbor.textContent || '').endsWith(' ')
+			: (neighbor.textContent || '').startsWith(' ')
+	);
+
+	if (!neighborHasSpace) {
+		const insertBefore = direction === 'leading' ? node : node.nextSibling;
+		node.parentNode.insertBefore(doc.createTextNode(' '), insertBefore);
+	}
+
+	return 1;
+}
+
 function removeEmptyLines(element: Element, doc: Document): void {
 	let removedCount = 0;
 	const startTime = Date.now();
@@ -586,12 +674,11 @@ function removeEmptyLines(element: Element, doc: Document): void {
 				removedCount++;
 			} else {
 				// Clean up the text content while preserving important spaces
+				// Collapse newlines to spaces (CSS white-space: normal behavior)
 				const newText = text
-					.replace(/\n{3,}/g, '\n\n') // More than 2 newlines -> 2 newlines
-					.replace(/^[\n\r\t]+/, '') // Remove leading newlines/tabs (preserve spaces)
-					.replace(/[\n\r\t]+$/, '') // Remove trailing newlines/tabs (preserve spaces)
-					.replace(/[ \t]*\n[ \t]*/g, '\n') // Remove spaces around newlines
-					.replace(/[ \t]{3,}/g, ' ') // 3+ spaces -> 1 space
+					.replace(/[\n\r]+/g, ' ') // Newlines -> spaces
+					.replace(/\t+/g, ' ') // Tabs -> spaces
+					.replace(/ {2,}/g, ' ') // 2+ spaces -> 1 space
 					.replace(/^[ ]+$/, ' ') // Multiple spaces between elements -> single space
 					.replace(/\s+([,.!?:;])/g, '$1') // Remove spaces before punctuation
 					// Clean up zero-width characters (except ZWNJ \u200C used in Farsi) and multiple non-breaking spaces
@@ -627,23 +714,27 @@ function removeEmptyLines(element: Element, doc: Document): void {
 		// Special handling for block elements
 		const isBlockElement = getComputedStyle(node)?.display === 'block';
 		
-		// Only remove empty text nodes at the start and end if they contain just newlines/tabs
-		// For block elements, also remove spaces
-		const startPattern = isBlockElement ? /^[\n\r\t \u200C\u200B\u200D\u200E\u200F\uFEFF\xA0]*$/ : /^[\n\r\t\u200C\u200B\u200D\u200E\u200F\uFEFF]*$/;
-		const endPattern = isBlockElement ? /^[\n\r\t \u200C\u200B\u200D\u200E\u200F\uFEFF\xA0]*$/ : /^[\n\r\t\u200C\u200B\u200D\u200E\u200F\uFEFF]*$/;
-		
-		while (node.firstChild && 
-			   isTextNode(node.firstChild) && 
-			   (node.firstChild.textContent || '').match(startPattern)) {
+		// Remove whitespace-only text nodes at start/end
+		const whitespacePattern = isBlockElement ? /^[\n\r\t \u200C\u200B\u200D\u200E\u200F\uFEFF\xA0]*$/ : /^[\n\r\t\u200C\u200B\u200D\u200E\u200F\uFEFF]*$/;
+
+		while (node.firstChild &&
+			   isTextNode(node.firstChild) &&
+			   (node.firstChild.textContent || '').match(whitespacePattern)) {
 			node.removeChild(node.firstChild);
 			removedCount++;
 		}
-		
-		while (node.lastChild && 
-			   isTextNode(node.lastChild) && 
-			   (node.lastChild.textContent || '').match(endPattern)) {
+
+		while (node.lastChild &&
+			   isTextNode(node.lastChild) &&
+			   (node.lastChild.textContent || '').match(whitespacePattern)) {
 			node.removeChild(node.lastChild);
 			removedCount++;
+		}
+
+		// For inline elements, move leading/trailing spaces outside the element
+		if (!isBlockElement && INLINE_ELEMENTS.has(tag) && node.parentNode) {
+			removedCount += moveWhitespaceOutside(node, doc, 'leading');
+			removedCount += moveWhitespaceOutside(node, doc, 'trailing');
 		}
 
 		// Ensure there's a space between inline elements if needed

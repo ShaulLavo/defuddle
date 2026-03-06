@@ -23,7 +23,7 @@ Let’s review how Obsidian Sync encryption works:
 2. The Obsidian app generates a unique [salt](https://en.wikipedia.org/wiki/Salt_\(cryptography\)) for each vault. A salt is random data used to protect your password by mixing it with your password before hashing.
 3. Your base key is derived from your password + salt using an algorithm called [scrypt](https://en.wikipedia.org/wiki/Scrypt).
 4. Your encryption key is derived from the base key using an algorithm called [HKDF](https://en.wikipedia.org/wiki/HKDF). If your vault was created using the [older encryption version](https://help.obsidian.md/sync/migrate), the encryption key uses the base key directly.
-5. This encryption key is used to encrypt/decrypt data with [AES -256](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) using [Galois/Counter Mode](https://en.wikipedia.org/wiki/Galois/Counter_Mode).
+5. This encryption key is used to encrypt/decrypt data with [AES-256](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) using [Galois/Counter Mode](https://en.wikipedia.org/wiki/Galois/Counter_Mode).
 
 In the next few steps, you’ll learn how to get your vault’s salt, and test the encryption of your data.
 
